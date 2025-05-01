@@ -1,8 +1,8 @@
+import 'package:beginner_practice/bloc_practice/bloc/counter_with_bloc/counter_bloc.dart';
+import 'package:beginner_practice/bloc_practice/bloc/counter_with_bloc/counter_bloc_app_ui.dart';
 import 'package:beginner_practice/bloc_practice/cubit_practice/api_calling/api_caller_cubit.dart';
-import 'package:beginner_practice/bloc_practice/cubit_practice/api_calling/api_caller_cubit_app_ui.dart';
 import 'package:beginner_practice/bloc_practice/cubit_practice/api_calling/services/api_service.dart';
 import 'package:beginner_practice/bloc_practice/cubit_practice/cubit_counter/counter_cubit.dart';
-import 'package:beginner_practice/bloc_practice/cubit_practice/cubit_counter/counter_cubit_app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,6 +12,7 @@ void main() {
       providers: [
         BlocProvider(create: (context) => CounterCubit()),
         BlocProvider(create: (context) => ApiCallerCubit(ApiService())),
+        BlocProvider(create: (context) => CounterBloc()),
       ],
       child: MyApp(),
     ),
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: ApiCallerCubitAppUi(),
+      home: CounterBlocAppUi(),
     );
   }
 }
