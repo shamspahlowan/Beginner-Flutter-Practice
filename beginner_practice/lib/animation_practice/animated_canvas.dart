@@ -20,12 +20,12 @@ extension ToPath on CircleSide {
       case CircleSide.left:
         path.moveTo(size.width, 0); // Top-right
         endPoint = Offset(size.width, size.height); // Bottom-right
-        clockwise = true;
+        clockwise = false;
         break;
       case CircleSide.right:
-        path.moveTo(0, 0); // Top-left
+        // path.moveTo(0, 0); // Top-left
         endPoint = Offset(0, size.height); // Bottom-left
-        clockwise = false;
+        clockwise = true;
         break;
     }
 
@@ -54,11 +54,14 @@ class HalfCircleClipper extends CustomClipper<Path> {
 }
 
 class _AnimatedCanvasState extends State<AnimatedCanvas>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _rotation;
   bool _isRunning = false;
   String status = "The animation is paused";
+
+  late AnimationController _counterClockController;
+  late Animation<double> _counterRotation;
 
   @override
   void initState() {
@@ -71,11 +74,20 @@ class _AnimatedCanvasState extends State<AnimatedCanvas>
       begin: 0.0,
       end: 2 * pi,
     ).animate(_animationController);
+
+    _counterClockController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
+    _counterRotation = Tween<double>(begin: 0.0, end: -(pi / 2)).animate(
+      CurvedAnimation(parent: _counterClockController, curve: Curves.bounceOut),
+    );
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _counterClockController.dispose();
     super.dispose();
   }
 
@@ -84,10 +96,12 @@ class _AnimatedCanvasState extends State<AnimatedCanvas>
       if (_isRunning) {
         _isRunning = false;
         _animationController.stop();
+        _counterClockController.stop();
         status = "The animation is paused!";
       } else {
         _isRunning = true;
         _animationController.repeat();
+        _counterClockController.repeat();
         status = "The animation is running!";
       }
     });
@@ -122,23 +136,40 @@ class _AnimatedCanvasState extends State<AnimatedCanvas>
                         ),
                       ),
                       const SizedBox(width: 20),
-                      ClipPath(
-                        clipper: const HalfCircleClipper(side: CircleSide.left),
-                        child: Container(
-                          height: 80,
-                          width: 80,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      ClipPath(
-                        clipper: const HalfCircleClipper(
-                          side: CircleSide.right,
-                        ),
-                        child: Container(
-                          height: 80,
-                          width: 80,
-                          color: Colors.yellow,
-                        ),
+                      AnimatedBuilder(
+                        animation: _counterClockController,
+                        builder: (context, child) {
+                          return Transform(
+                            alignment: Alignment.center,
+                            transform:
+                                Matrix4.identity()
+                                  ..rotateZ(_counterRotation.value),
+                            child: Row(
+                              children: [
+                                ClipPath(
+                                  clipper: const HalfCircleClipper(
+                                    side: CircleSide.left,
+                                  ),
+                                  child: Container(
+                                    height: 80,
+                                    width: 80,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                ClipPath(
+                                  clipper: const HalfCircleClipper(
+                                    side: CircleSide.right,
+                                  ),
+                                  child: Container(
+                                    height: 80,
+                                    width: 80,
+                                    color: Colors.yellow,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ],
                   );
