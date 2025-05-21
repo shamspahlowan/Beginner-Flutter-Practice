@@ -63,6 +63,9 @@ class _AnimatedCanvasState extends State<AnimatedCanvas>
   late AnimationController _counterClockController;
   late Animation<double> _counterRotation;
 
+  late AnimationController _flipController;
+  late Animation _flipAnimation;
+
   @override
   void initState() {
     super.initState();
@@ -82,12 +85,55 @@ class _AnimatedCanvasState extends State<AnimatedCanvas>
     _counterRotation = Tween<double>(begin: 0.0, end: -(pi / 2)).animate(
       CurvedAnimation(parent: _counterClockController, curve: Curves.bounceOut),
     );
+
+    _flipController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
+
+    _flipAnimation = Tween<double>(begin: 0.0, end: pi).animate(
+      CurvedAnimation(parent: _flipController, curve: Curves.bounceOut),
+    );
+
+    _counterClockController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _flipAnimation = Tween<double>(
+          begin: _flipAnimation.value,
+          end: _flipAnimation.value + pi,
+        ).animate(
+          CurvedAnimation(parent: _flipController, curve: Curves.bounceOut),
+        );
+
+        _flipController
+          ..reset()
+          ..forward();
+      }
+    });
+
+    _flipController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _counterRotation = Tween<double>(
+          begin: _counterRotation.value,
+          end: _counterRotation.value + -(pi / 2),
+        ).animate(
+          CurvedAnimation(
+            parent: _counterClockController,
+            curve: Curves.bounceOut,
+          ),
+        );
+
+        _counterClockController
+          ..reset()
+          ..forward();
+      }
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     _counterClockController.dispose();
+    _flipController.dispose();
     super.dispose();
   }
 
@@ -97,11 +143,15 @@ class _AnimatedCanvasState extends State<AnimatedCanvas>
         _isRunning = false;
         _animationController.stop();
         _counterClockController.stop();
+        _flipController.stop();
         status = "The animation is paused!";
       } else {
         _isRunning = true;
         _animationController.repeat();
-        _counterClockController.repeat();
+        _counterClockController
+          ..reset()
+          ..forward();
+        // _flipController.forward();
         status = "The animation is running!";
       }
     });
@@ -146,25 +196,47 @@ class _AnimatedCanvasState extends State<AnimatedCanvas>
                                   ..rotateZ(_counterRotation.value),
                             child: Row(
                               children: [
-                                ClipPath(
-                                  clipper: const HalfCircleClipper(
-                                    side: CircleSide.left,
-                                  ),
-                                  child: Container(
-                                    height: 80,
-                                    width: 80,
-                                    color: Colors.blue,
-                                  ),
+                                AnimatedBuilder(
+                                  animation: _flipAnimation,
+                                  builder: (context, child) {
+                                    return Transform(
+                                      alignment: Alignment.centerRight,
+                                      transform:
+                                          Matrix4.identity()
+                                            ..rotateY(_flipAnimation.value),
+                                      child: ClipPath(
+                                        clipper: const HalfCircleClipper(
+                                          side: CircleSide.left,
+                                        ),
+                                        child: Container(
+                                          height: 80,
+                                          width: 80,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                ClipPath(
-                                  clipper: const HalfCircleClipper(
-                                    side: CircleSide.right,
-                                  ),
-                                  child: Container(
-                                    height: 80,
-                                    width: 80,
-                                    color: Colors.yellow,
-                                  ),
+                                AnimatedBuilder(
+                                  animation: _flipAnimation,
+                                  builder: (context, child) {
+                                    return Transform(
+                                      alignment: Alignment.centerLeft,
+                                      transform:
+                                          Matrix4.identity()
+                                            ..rotateY(_flipAnimation.value),
+                                      child: ClipPath(
+                                        clipper: const HalfCircleClipper(
+                                          side: CircleSide.right,
+                                        ),
+                                        child: Container(
+                                          height: 80,
+                                          width: 80,
+                                          color: Colors.yellow,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
